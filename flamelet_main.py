@@ -29,7 +29,7 @@ def flamelet_main(input_data, switch, save):
     if massread:
         critical_rates = np.load(file='mass_range.npy', allow_pickle=True)
     else:
-        critical_rates = massprobe(press, tempf, tempo, mdot, compf, compo, mech, width, npoint)
+        critical_rates = massprobe(press, tempf, tempo, mdot, compf, compo, mech, width, npoint, air_multi)
     if masssave:
         np.save(file='mass_range.npy', arr=critical_rates)
     initial_grid = width*np.linspace(0.0, 1.0, npoint)

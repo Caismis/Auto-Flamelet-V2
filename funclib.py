@@ -220,7 +220,7 @@ def pdfinter(zeta, sourcelist, zs):
 def non_increasing(L):
     return all(x>=y for x, y in zip(L, L[1:]))
 
-def massprobe(press, tempf, tempo, mdot, compf, compo, mech, width, npoint):
+def massprobe(press, tempf, tempo, mdot, compf, compo, mech, width, npoint, air_multi):
     print('---Flow rate probe started---')
     left_enable = True
     initial_grid = width*np.linspace(0.0, 1.0, npoint)
@@ -235,7 +235,6 @@ def massprobe(press, tempf, tempo, mdot, compf, compo, mech, width, npoint):
     flame.oxidizer_inlet.T = tempo
     logstart = 0
     factor = 1.1
-    air_multi = 8
     while True:
         mflux = mdot*ampl
         flame.fuel_inlet.mdot = mflux
