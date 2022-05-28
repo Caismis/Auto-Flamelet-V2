@@ -21,7 +21,7 @@ def flamelet_main(input_data, switch, save):
     moleout = input_data[10]
     width = input_data[11]
     npoint = input_data[12]
-    air_multi = 8
+    air_multi = 1
     
     
     if switch:

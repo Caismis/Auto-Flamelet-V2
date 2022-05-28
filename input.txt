@@ -1,21 +1,21 @@
 Max Number of Flamelets:
 60
 Mixture Fraction at stoich:
-0.064
+0.351
 Pressure:
 101325
 Temperature of Fuel:
-450
+300
 Temperature of Oxidizer:
-350
+300
 Initail Flow Rate:
 0.1
 Composition of Fuel(Mole Fraction):
-C12H23:1
+CH4:0.25, O2:0.1575, N2:0.5925
 Composition of Oxidizer(Mole Fraction):
 O2:0.21, N2:0.79
 Mechnism:
-kerosene.yaml
+chem.yaml
 Library Name for Output:
 flamelet.d
 Molecular Weights File Name:

@@ -1,6 +1,8 @@
 from flamelet_main import flamelet_main
 from multipdf import multipdf
 from input_reader import input_reader
+from time import time
+import datetime
 import numpy as np
 import sys
 
@@ -31,6 +33,7 @@ if __name__ == "__main__":
     print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
     usrinput = input('Enter the number...\n')
+    start_time = time()
     if usrinput == '1':
         print('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
         print('Create SLFM...')
@@ -79,3 +82,6 @@ if __name__ == "__main__":
         print('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
         uniset = multipdf(input_data, switch=True)
         write_remap(input_data, uniset, misc)
+    end_time  = time()
+    duration = end_time - start_time
+    print('Running Time:', str(datetime.timedelta(seconds=duration)))
