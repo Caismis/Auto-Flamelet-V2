@@ -3,3 +3,4 @@
 *.npy
 *.d
 *.txt
+.DS_Store
