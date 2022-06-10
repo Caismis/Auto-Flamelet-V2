@@ -21,6 +21,7 @@ def flamelet_main(input_data, switch, save):
     moleout = input_data[10]
     width = input_data[11]
     npoint = input_data[12]
+    nogen = input_data[15]
     air_multi = 1
     
     
@@ -36,6 +37,8 @@ def flamelet_main(input_data, switch, save):
     gas = ct.Solution(mech, width=width)
     nsp = gas.n_species
     species_names = gas.species_names
+    if nogen == 'True' and 'NO' not in species_names:
+        raise Exception('No NO in this mechanism!')
     flame = ct.CounterflowDiffusionFlame(gas, grid=initial_grid)
     ampl = 1.0
     flame.P = press
@@ -98,7 +101,7 @@ def flamelet_main(input_data, switch, save):
                 continue
         tempset = flame.T
         tmax = max(tempset)
-        rhoset = flame.density
+        rhoset = 1/flame.density
         a = flame.strain_rate('potential_flow_oxidizer')
         dissrate = (2*a/np.pi)*np.exp(-2.0*(ss.erfcinv(2.0*zst)**2))
         mixfracset = flame.mixture_fraction('Bilger')
@@ -108,17 +111,10 @@ def flamelet_main(input_data, switch, save):
         if switch:
             progressvar = np.zeros(len(mixfracset))
             varrate = np.zeros(len(mixfracset))
-            # for num in range(len(mixfracset)):
-            #     progressvar[num] = flame.Y[gas.species_index('CO2')][num] + flame.Y[gas.species_index('H2O')][num] + flame.Y[gas.species_index('CO')][num]
-            #     varrate[num] = flame.net_production_rates[gas.species_index('CO2')][num] + flame.net_production_rates[gas.species_index('H2O')][num] + \
-            #     flame.net_production_rates[gas.species_index('CO')][num]
-            #     varrate[num] /= flame.density_mole[num]
             for item in cdef:
                 progressvar += flame.Y[gas.species_index(item.strip())]
                 varrate += flame.net_production_rates[gas.species_index(item.strip())]*gas.molecular_weights[gas.species_index(item.strip())]/flame.density
-            # progressvar = flame.Y[gas.species_index('CO2')] + flame.Y[gas.species_index('H2O')] + flame.Y[gas.species_index('CO')]
             progressvar = posfilter(progressvar)
-            # varrate /= flux*2
         for isp in range(nsp):
             dataset.append(posfilter(list(reversed(flame.Y[isp]))))
         dataset.append(list(reversed(tempset)))
@@ -127,6 +123,8 @@ def flamelet_main(input_data, switch, save):
         if switch:
             dataset.append(list(reversed(varrate)))
             dataset.append(list(reversed(progressvar)))
+        if nogen == 'True':
+            dataset.append(list(reversed(flame.net_production_rates[gas.species_index('NO')]*gas.molecular_weights[gas.species_index('NO')]/flame.density)))
         o2rate = flame.net_production_rates[gas.species_index('O2')]
         for j in range(len(o2rate)):
             if abs(o2rate[j]) <= 1e-4:
@@ -136,16 +134,16 @@ def flamelet_main(input_data, switch, save):
             # if (not (np.sort(left) == left[::-1]).all()) or o2rate[-1] != 0:
             #     print('Thick Flame at dissipation rate={:7.4f}, discard...'.format(dissrate))
             # else:
-                if logstart == 0:
-                    logstart = i
-                    print('Start log...')
-                print('Success, Max Temperature={:7.2f}, Dissipation Rate={:7.4f}'.format(tmax, dissrate))
-                print('Flow rate={:7.4f}'.format(flux))
-                dataseries.append(dataset)
-                dissrates.append(dissrate)
-                tmaxs.append(tmax)
-                flowrates.append(flux)
-                flameout = flame.to_solution_array()
+            if logstart == 0:
+                logstart = i
+                print('Start log...')
+            print('Success, Max Temperature={:7.2f}, Dissipation Rate={:7.4f}'.format(tmax, dissrate))
+            print('Flow rate={:7.4f}'.format(flux))
+            dataseries.append(dataset)
+            dissrates.append(dissrate)
+            tmaxs.append(tmax)
+            flowrates.append(flux)
+            flameout = flame.to_solution_array()
         else:
             if tmax < max(tempf, tempo) + 50:
                     print('Extinct, Max Temperature={:7.2f}, Dissipation Rate={:7.4f}'.format(tmax, dissrate))
@@ -187,8 +185,6 @@ def flamelet_main(input_data, switch, save):
         unstable_reached = False
         dataset = []
         for i in range(0, 6):
-            # left_bound = -0.8
-            # right_bound = 0.8
             left_bound = 1
             right_bound = 0
             if unstable_reached == False:
@@ -202,24 +198,14 @@ def flamelet_main(input_data, switch, save):
                         flame.oxidizer_inlet.mdot = flux*air_multi
                         newt = list(flame.T.copy())
                         newg = flame.grid.copy()
-                        # desrate = (newt[-1] - newt[0])/(newg[-1] - newg[0])
-                        # desb = newt[-1] - desrate*newg[-1]
-                        # newt = flameoutt.copy()
                         oldt = flame.T.copy()
                         for j in range(len(newt)):
-                            # extinctt = extinctfunc(newg[j])
-                            # delta = newt[j] - extinctt
-                            # newt[j] -= delta*middle
-                            # if newt[j] < extinctt:
-                            #     newt[j] = extinctt
                             extinctt = extinctfunc(newg[j])
                             newt[j] = middle*newt[j] + (1 - middle)*extinctt
                         for j in range(deviate):
                             newt.pop(-1)
-                            # newt.pop(0)
                         for j in range(deviate):
                             newt.insert(0, newt[0])
-                            # newt.append(newt[0])
                         newt = np.array(newt)
                         flame.set_profile('T', newg/width, newt)
                         flame.set_refine_criteria(ratio=3.0, slope=0.1, curve=0.2, prune=0.03)
@@ -258,20 +244,14 @@ def flamelet_main(input_data, switch, save):
             dissrates.append(dissrate)
             tmaxs.append(tmax)
             mixfracset = flame.mixture_fraction('Bilger')
-            rhoset = flame.density
+            rhoset = 1/flame.density
             progressvar = np.zeros(len(mixfracset))
             varrate = np.zeros(len(mixfracset))
             mixfracset = posfilter(mixfracset)
-            # for num in range(len(mixfracset)):
-            #     progressvar[num] = flame.Y[gas.species_index('CO2')][num] + flame.Y[gas.species_index('H2O')][num] + flame.Y[gas.species_index('CO')][num]
-            #     varrate[num] = flame.net_production_rates[gas.species_index('CO2')][num] + flame.net_production_rates[gas.species_index('H2O')][num] + \
-            #     flame.net_production_rates[gas.species_index('CO')][num]
-            #     varrate[num] /= flame.density_mole[num]
             for item in cdef:
                 progressvar += flame.Y[gas.species_index(item.strip())]
                 varrate += flame.net_production_rates[gas.species_index(item.strip())]*gas.molecular_weights[gas.species_index(item.strip())]/flame.density
             progressvar = posfilter(progressvar)
-            # varrate /= flux*2
             for isp in range(nsp):
                 dataset.append(posfilter(list(reversed(flame.Y[isp]))))
             dataset.append(list(reversed(tempset)))
@@ -279,6 +259,8 @@ def flamelet_main(input_data, switch, save):
             dataset.append(list(reversed(mixfracset)))
             dataset.append(list(reversed(varrate)))
             dataset.append(list(reversed(progressvar)))
+            if nogen == 'True':
+                dataset.append(list(reversed(flame.net_production_rates[gas.species_index('NO')]*gas.molecular_weights[gas.species_index('NO')]/flame.density)))
             dataseries.append(dataset)
         else:
             print('Unable to catch unstable branch.')
@@ -324,18 +306,6 @@ def flamelet_main(input_data, switch, save):
                                 newt.insert(0, newt[0])
                             newt = np.array(newt)
                             flame.set_profile('T', newg/width, newt)
-                            # for j in range(len(newt)):
-                            #     extinctt = newg[j]*desrate + desb
-                            #     delta = newt[j] - extinctt
-                            #     newt[j] -= delta*middle
-                            #     if newt[j] < extinctt:
-                            #         newt[j] = extinctt
-                            # for j in range(deviate):
-                            #     newt.pop(-1)
-                            # for j in range(deviate):
-                            #     newt.insert(0, newg[0]*desrate + desb)
-                            # newt = np.array(newt)
-                            # flame.set_profile('T', flame.grid/width, newt)
                             flame.set_refine_criteria(ratio=3.0, slope=0.1, curve=0.2, prune=0.03)
                             try:
                                 flame.solve(loglevel=0, auto=True)
@@ -373,20 +343,13 @@ def flamelet_main(input_data, switch, save):
                 dissrates.append(dissrate)
                 tmaxs.append(tmax)
                 mixfracset = flame.mixture_fraction('Bilger')
-                rhoset = flame.density
+                rhoset = 1/flame.density
                 progressvar = np.zeros(len(mixfracset))
                 varrate = np.zeros(len(mixfracset))
                 mixfracset = posfilter(mixfracset)
-                # for num in range(len(mixfracset)):
-                #     progressvar[num] = flame.Y[gas.species_index('CO2')][num] + flame.Y[gas.species_index('H2O')][num] + flame.Y[gas.species_index('CO')][num]
-                #     varrate[num] = flame.net_production_rates[gas.species_index('CO2')][num] + flame.net_production_rates[gas.species_index('H2O')][num] + \
-                #     flame.net_production_rates[gas.species_index('CO')][num]
-                #     varrate[num] /= flame.density_mole[num]
                 for item in cdef:
                     progressvar += flame.Y[gas.species_index(item.strip())]
                     varrate += flame.net_production_rates[gas.species_index(item.strip())]*gas.molecular_weights[gas.species_index(item.strip())]/flame.density
-                # progressvar = flame.Y[gas.species_index('CO2')] + flame.Y[gas.species_index('H2O')] + flame.Y[gas.species_index('CO')]
-                # varrate /= flux*2
                 for isp in range(nsp):
                     dataset.append(posfilter(list(reversed(flame.Y[isp]))))
                 dataset.append(list(reversed(tempset)))
@@ -394,6 +357,8 @@ def flamelet_main(input_data, switch, save):
                 dataset.append(list(reversed(mixfracset)))
                 dataset.append(list(reversed(varrate)))
                 dataset.append(list(reversed(progressvar)))
+                if nogen == 'True':
+                    dataset.append(list(reversed(flame.net_production_rates[gas.species_index('NO')]*gas.molecular_weights[gas.species_index('NO')]/flame.density)))
                 dataseries.append(dataset)
             else:
                 print('Unable to catch unstable branch, some data might lost.')
@@ -414,6 +379,13 @@ def flamelet_main(input_data, switch, save):
             dataseries[i][nsp + 4] = profunc(normzs)
             dataseries[i][nsp + 3] = varfunc(normzs)
             csts[i] = (max(dataseries[i][nsp + 4]))
+            if nogen == 'True':
+                nofunc =  interpolate.interp1d((dataseries[i][nsp + 2]), (dataseries[i][nsp + 5]))
+                dataseries[i][nsp + 5] = nofunc(normzs)
+        else:
+            if nogen == 'True':
+                nofunc =  interpolate.interp1d((dataseries[i][nsp + 2]), (dataseries[i][nsp + 3]))
+                dataseries[i][nsp + 5] = nofunc(normzs)
         for isp in range(nsp):
             massfunc = interpolate.interp1d((dataseries[i][nsp + 2]), (dataseries[i][isp]))
             dataseries[i][isp] = massfunc(normzs)

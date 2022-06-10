@@ -6,12 +6,13 @@ from tqdm import tqdm
 
 def multipdf(input_data, switch):
     dataseries = np.load(file='dataseries.npy', allow_pickle=True)
+    misc = np.load(file='misc.npy', allow_pickle=True)
     nzeta = input_data[13]
+    nogen = input_data[15]
+    nsp = misc[0]
     if switch is False:
-        nsp = len(dataseries[0]) - 3
         pbar = tqdm(total=len(dataseries), bar_format='{l_bar}>>>{bar}<<<', colour='RED')
     else:
-        nsp = len(dataseries[0]) - 5
         pbar = tqdm(total=len(dataseries), bar_format='{l_bar}>>>{bar}<<<', colour='BLUE')
     pbar.set_description('Progress')
     update = lambda *args: pbar.update()
@@ -22,7 +23,7 @@ def multipdf(input_data, switch):
         pool = Pool(cpu_count())
     bundle = [(dataseries[i], nsp, i, nzeta) for i in range(len(dataseries))]
     for package in bundle:
-        r = pool.apply_async(presume, (package, switch, ), callback=update)
+        r = pool.apply_async(presume, (package, switch, nogen, ), callback=update)
         # r = pool.apply_async(lim_presume, (package, switch, ), callback=update)
         rslt.append(r)
     for r in rslt:
@@ -36,7 +37,7 @@ def multipdf(input_data, switch):
         return uniset
     
 
-def presume(package, switch):
+def presume(package, switch, nogen):
     datas = package[0]
     nsp = package[1]
     nzeta = package[3]
@@ -44,18 +45,28 @@ def presume(package, switch):
     zetas = np.linspace(0, 0.99, nzeta, endpoint=True)
     for z in zetas:
         intmassset = []
-        inttemps = pdfinter(z, datas[nsp], datas[nsp + 2])      
+        inttemps = pdfinter(z, datas[nsp], datas[nsp + 2])
+        intrhos = pdfinter(z, datas[nsp + 1], datas[nsp + 2])
         if switch:
-            intrhos = pdfinter(z, datas[nsp + 4], datas[nsp + 2])
+            intpro = pdfinter(z, datas[nsp + 4], datas[nsp + 2])
             intvar = pdfinter(z, datas[nsp + 3], datas[nsp + 2])
+            if nogen == 'True':
+                intno = pdfinter(z, datas[nsp + 5], datas[nsp + 2])
         else:
-            intrhos = pdfinter(z, datas[nsp + 1], datas[nsp + 2])
+            if nogen == 'True':
+                intno = pdfinter(z, datas[nsp + 3], datas[nsp + 2])
         for isp in range(nsp):
             intmass = pdfinter(z, datas[isp], datas[nsp + 2])
             intmassset.append(intmass)
         if switch:
-            metadata.append([intmassset, inttemps, intrhos, datas[nsp + 2], intvar])
+            if nogen == 'True':
+                metadata.append([intmassset, inttemps, intrhos, datas[nsp + 2], intpro, intvar, intno])
+            else:
+                metadata.append([intmassset, inttemps, intrhos, datas[nsp + 2], intpro, intvar])
         else:
-            metadata.append([intmassset, inttemps, intrhos, datas[nsp + 2]])
+            if nogen == 'True':
+                metadata.append([intmassset, inttemps, intrhos, datas[nsp + 2]], intno)
+            else:
+                metadata.append([intmassset, inttemps, intrhos, datas[nsp + 2]])
     return metadata
 

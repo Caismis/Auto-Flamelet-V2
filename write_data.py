@@ -34,7 +34,7 @@ def write_data(input_data, uniset, misc):
                     optf.write('Temperature\n')
                     stdwrt(uniset[i][j][k], optf)
                 elif k == 2:
-                    optf.write('Density\n')
+                    optf.write('invDensity\n')
                     stdwrt(uniset[i][j][k], optf)
                 elif k == 3:
                     optf.write('Z\n')
@@ -80,19 +80,18 @@ def write_remap(input_data, uniset, misc):
                 if k == 1:
                     for isp in range(misc[0]):
                         optf.write(misc[1][isp] + '\n')
-                        # stdwrt(mapset[k][i][j][isp], optf)
                         stdwrt(cinterpol(currentcs, mapset[k][i][j][isp], cseries), optf)
                 elif k == 2:
                     optf.write('Temperature\n')
-                    # stdwrt(mapset[k][i][j], optf)
                     stdwrt(cinterpol(currentcs, mapset[k][i][j], cseries), optf)
                 elif k == 0:
                     optf.write('C\n')
-                    # stdwrt(mapset[k][i][j], optf)
                     stdwrt(cseries, optf)
                 elif k == 3:
                     optf.write('Rate\n')
-                    # stdwrt(mapset[k][i][j], optf)
+                    stdwrt(cinterpol(currentcs, mapset[k][i][j], cseries), optf)
+                elif k == 4:
+                    optf.write('invDensity\n')
                     stdwrt(cinterpol(currentcs, mapset[k][i][j], cseries), optf)
     print('---Completed---')
     optf.close()
@@ -110,36 +109,43 @@ def remapper(uniset, nsp, npoint, nzeta):
     #Progress Rate
     remaps = []
     #Species Fraction
+    remapd = []
+    #Density
     for i in range(len(normzs)):
         listt = []
         listc = []
         listr = []
         lists = []
+        listd = []
         for j in range(nzeta):
-            slicet =  np.empty(lambdas)
-            slicec =  np.empty(lambdas)
-            slicer =  np.empty(lambdas)
+            slicet = np.empty(lambdas)
+            slicec = np.empty(lambdas)
+            slicer = np.empty(lambdas)
+            sliced = np.empty(lambdas)
             slices =  []
             for isp in range(nsp):
                 slices.append(np.empty(lambdas))
             for k in range(lambdas):
-                slicec[k] = uniset[k][j][2][i]
+                slicec[k] = uniset[k][j][4][i]
             cindex = np.argsort(slicec)
             slicec = np.sort(slicec)
             for k in range(lambdas):
                 slicet[k] = uniset[cindex[k]][j][1][i]
-                slicer[k] = uniset[cindex[k]][j][4][i]
+                slicer[k] = uniset[cindex[k]][j][5][i]
+                sliced[k] = uniset[cindex[k]][j][2][i]
                 for isp in range(nsp):
                     slices[isp][k] = uniset[cindex[k]][j][0][isp][i]
             listt.append(slicet)
             listc.append(slicec)
             listr.append(slicer)
             lists.append(slices)
+            listd.append(sliced)
         remapt.append(listt)
         remapc.append(listc)
         remapr.append(listr)
         remaps.append(lists)
-    return [remapc, remaps, remapt, remapr]
+        remapd.append(listd)
+    return [remapc, remaps, remapt, remapr, remapd]
 
 def cinterpol(clist, nlist, stdc):
     outlist = []

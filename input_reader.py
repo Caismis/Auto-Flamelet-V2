@@ -28,11 +28,14 @@ def input_reader():
         nzeta = name_extracter(f, 'int')
         print(f.readline().strip())
         cdef = name_extracter(f, 'str').split(',')
+        print(f.readline().strip())
+        nogen = name_extracter(f, 'str')
         print('----------END OF DATA----------')
     print('Is this OK?[y/n]')
     usrinput = input()
     if usrinput == 'n':
         print('Cancelling...')
     else:
-        input_package = (flamenum, zst, press, tempf, tempo, mdot, compf, compo, mech, outname, moleout, width, npoint, nzeta, cdef)
+        input_package = (flamenum, zst, press, tempf, tempo, mdot, compf, compo, mech, outname, moleout, width, npoint, nzeta, cdef, \
+            nogen)
         return input_package

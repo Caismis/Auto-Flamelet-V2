@@ -29,7 +29,9 @@ Number of Zeta:
 ===For FPV model===
 Definition of progress variable (C):
 CO2, H2O
-
+===For NOx Generation===
+Detail NO generation:
+True
 
 /CH4:0.25, O2:0.1575, N2:0.5925, 0.351
 /CH4:1, 0.0552
