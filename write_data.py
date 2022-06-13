@@ -39,6 +39,9 @@ def write_data(input_data, uniset, misc):
                 elif k == 3:
                     optf.write('Z\n')
                     stdwrt(uniset[i][j][k], optf)
+                elif k == 4:
+                    optf.write('NO Rate\n')
+                    stdwrt(uniset[i][j][k], optf)
     print('---Completed---')
     optf.close()
 
@@ -92,6 +95,9 @@ def write_remap(input_data, uniset, misc):
                     stdwrt(cinterpol(currentcs, mapset[k][i][j], cseries), optf)
                 elif k == 4:
                     optf.write('invDensity\n')
+                    stdwrt(cinterpol(currentcs, mapset[k][i][j], cseries), optf)
+                elif k == 5:
+                    optf.write('NO Rate\n')
                     stdwrt(cinterpol(currentcs, mapset[k][i][j], cseries), optf)
     print('---Completed---')
     optf.close()
