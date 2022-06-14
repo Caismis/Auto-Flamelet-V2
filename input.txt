@@ -14,8 +14,8 @@ Composition of Fuel(Mole Fraction):
 CH4:0.25, O2:0.1575, N2:0.5925
 Composition of Oxidizer(Mole Fraction):
 O2:0.21, N2:0.79
-Mechnism:
-chem.yaml
+Mechnism:gri30.yaml
+gri30.yaml
 Library Name for Output:
 flamelet.d
 Molecular Weights File Name:
